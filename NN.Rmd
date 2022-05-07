@@ -1,0 +1,354 @@
+---
+title: "Neural Networks"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(tensorflow)
+library(keras)
+```
+
+####################
+### CS Model
+####################
+
+```{r}
+load("../DATA/ts_pred.RData")
+load("../DATA/permno.RData")
+
+cs <- read.csv("../DATA/PROCESSED/processed_v2.csv")
+cs <- cs[-1]
+
+cs_train <- subset(cs, DATE < 20190101)
+cs_test <- anti_join(cs, cs_train)
+
+p_t <- cs_test[1:2]
+
+cs_train_x <- cs_train[3 : (ncol(cs_train) - 1)]
+cs_test_x <- cs_test[3 : (ncol(cs_test) - 1)]
+
+cs_train_y <- cs_train$CSRET
+cs_test_y <- cs_test$CSRET
+
+remove(cs_train, cs_test)
+```
+
+```{r}
+cs.X.train.mean <- apply(cs_train_x, 2, mean) 
+cs.X.train.sd <- apply(cs_train_x, 2, sd) 
+cs.X.test.mean <- apply(cs_test_x, 2, mean) 
+cs.X.test.sd <- apply(cs_test_x, 2, sd)
+
+cs.X.train.scaled <- scale(cs_train_x, center = cs.X.train.mean, scale = cs.X.train.sd) %>% 
+  as.matrix()
+cs.X.test.scaled <- scale(cs_test_x, center = cs.X.test.mean, scale = cs.X.test.sd) %>% 
+  as.matrix()
+
+cs.train.scaled <- data.frame(cs.X.train.scaled, CSRET = cs_train_y)
+cs.test.scaled <- data.frame(cs.X.test.scaled, CSRET= cs_test_y)
+```
+
+```{r}
+set.seed(10086)
+```
+
+```{r}
+model.nn.2 <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dense(units = 1)
+
+model.nn.2 %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.2
+
+training_history <-  model.nn.2 %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 50
+)
+
+training_history %>% plot()
+```
+
+```{r}
+model.nn.3 <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dense(units = 1)
+
+model.nn.3 %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.3
+
+training_history <-  model.nn.3 %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 60
+)
+
+training_history %>% plot()
+```
+
+```{r}
+model.nn.3.s <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dropout(rate = 0.1) %>% 
+  layer_dense(units = 1)
+
+model.nn.3.s %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.3.s
+
+training_history <-  model.nn.3.s %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 80
+)
+
+training_history %>% plot()
+```
+
+```{r}
+model.nn.4 <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dense(units = 8, activation = "relu") %>%
+  layer_dense(units = 1)
+
+model.nn.4 %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.4
+
+training_history <-  model.nn.4 %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 100
+)
+
+training_history %>% plot()
+```
+
+```{r}
+model.nn.4.s <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dropout(rate = 0.1) %>% 
+  layer_dense(units = 8, activation = "relu") %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 1)
+
+model.nn.4.s %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.4.s
+
+training_history <-  model.nn.4.s %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 100
+)
+
+training_history %>% plot()
+```
+
+```{r}
+model.nn.5 <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dense(units = 8, activation = "relu") %>%
+  layer_dense(units = 3, activation = "tanh") %>%
+  layer_dense(units = 1)
+
+model.nn.5 %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.5
+
+training_history <-  model.nn.5 %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 100
+)
+
+training_history %>% plot()
+```
+
+```{r}
+model.nn.5.s <- keras_model_sequential() %>% 
+  layer_dense(input_shape = ncol(cs.X.train.scaled), units = 32, activation = "relu") %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dropout(rate = 0.1) %>% 
+  layer_dense(units = 8, activation = "relu") %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 3, activation = "tanh") %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 1)
+
+model.nn.5.s %>% compile(
+    loss = "mean_squared_error",
+    optimizer = "adam",
+    metrics = "mae"
+)
+
+model.nn.5.s
+
+training_history <-  model.nn.5.s %>% fit(
+    x = cs.X.train.scaled,
+    y = cs_train_y,
+    shuffle = T,
+    validation_split = 0.3,
+    epochs = 100
+)
+
+training_history %>% plot()
+```
+
+
+```{r}
+print("2")
+model.nn.2 %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+
+print("3")
+model.nn.3 %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+
+print("3s")
+model.nn.3.s %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+
+print("4")
+model.nn.4 %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+
+print("4s")
+model.nn.4.s %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+
+print("5")
+model.nn.5 %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+
+print("5s")
+model.nn.5.s %>% 
+  evaluate(cs.X.test.scaled, cs_test_y)
+```
+
+```{r}
+cs.nn.2.pred <- model.nn.2 %>% predict(cs.X.test.scaled)
+cs.nn.3.pred <- model.nn.3 %>% predict(cs.X.test.scaled)
+cs.nn.3.s.pred <- model.nn.3.s %>% predict(cs.X.test.scaled)
+cs.nn.4.pred <- model.nn.4 %>% predict(cs.X.test.scaled)
+cs.nn.4.s.pred <- model.nn.4.s %>% predict(cs.X.test.scaled)
+cs.nn.5.pred <- model.nn.5 %>% predict(cs.X.test.scaled)
+cs.nn.5.s.pred <- model.nn.5.s %>% predict(cs.X.test.scaled)
+
+eval_results <- function(true, predicted, str) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE <-  sqrt(SSE/length(true))
+  cat(str, "\n", "R_squared:", R_square, "RMSE:", RMSE, "\n")
+}
+
+eval_results(cs_test_y, cs.nn.2.pred, "2")
+eval_results(cs_test_y, cs.nn.3.pred, "3")
+eval_results(cs_test_y, cs.nn.3.s.pred, "3s")
+eval_results(cs_test_y, cs.nn.4.pred, "4")
+eval_results(cs_test_y, cs.nn.4.s.pred, "4s")
+eval_results(cs_test_y, cs.nn.5.pred, "5")
+eval_results(cs_test_y, cs.nn.5.s.pred, "5s")
+
+pred <- cbind(p_t, cs_test_y, cs.nn.2.pred, cs.nn.3.pred, cs.nn.3.s.pred, 
+                              cs.nn.4.pred, cs.nn.4.s.pred, cs.nn.5.pred, cs.nn.5.s.pred)
+colnames(pred)[3:10] <- c("cs.y.test", "cs.nn.2", "cs.nn.3", "cs.nn.3.s", 
+                                      "cs.nn.4", "cs.nn.4.s", "cs.nn.5", "cs.nn.5.s")
+pred <- pred[order(pred$permno), ] %>% cbind(., ts_test_y, ts_ridge.pred)
+colnames(pred)[11:12] <- c("ts.y.test", "ts.ridge")
+pred <- pred[order(pred$DATE), ]
+pred <- pred %>% mutate(y.test = ts.y.test + cs.y.test,
+                        y.nn.2 = ts.ridge + cs.nn.2,
+                        y.nn.3 = ts.ridge + cs.nn.3,
+                        y.nn.3.s = ts.ridge + cs.nn.3.s,
+                        y.nn.4 = ts.ridge + cs.nn.4,
+                        y.nn.4.s = ts.ridge + cs.nn.4.s,
+                        y.nn.5 = ts.ridge + cs.nn.5,
+                        y.nn.5.s = ts.ridge + cs.nn.5.s)
+
+check <- pred[pred$permno == 14593, ]
+
+plot(x=1:24, as.matrix(check$y.test), "l", col = 1)
+lines(x=1:24, check$y.nn.2, col = 2)
+lines(x=1:24, check$y.nn.3, col = 3)
+lines(x=1:24, check$y.nn.3.s, col = 4)
+lines(x=1:24, check$y.nn.4, col = 5)
+lines(x=1:24, check$y.nn.4.s, col = 6)
+lines(x=1:24, check$y.nn.5, col = 7)
+lines(x=1:24, check$y.nn.5.s, col = 8)
+
+eval_results(pred$y.test, pred$y.nn.2, "2")
+eval_results(pred$y.test, pred$y.nn.3, "3")
+eval_results(pred$y.test, pred$y.nn.3.s, "3s")
+eval_results(pred$y.test, pred$y.nn.4, "4")
+eval_results(pred$y.test, pred$y.nn.4.s, "4s")
+eval_results(pred$y.test, pred$y.nn.5, "5")
+eval_results(pred$y.test, pred$y.nn.5.s, "5s")
+
+pred_top_100 <- pred[pred$permno %in% permno[1 : 100], ]
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.2, "2")
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.3, "3")
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.3.s, "3s")
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.4, "4")
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.4.s, "4s")
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.5, "5")
+eval_results(pred_top_100$y.test, pred_top_100$y.nn.5.s, "5s")
+
+pred_d_100 <- pred[pred$permno %in% permno[101 : 200], ]
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.2, "2")
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.3, "3")
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.3.s, "3s")
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.4, "4")
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.4.s, "4s")
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.5, "5")
+eval_results(pred_d_100$y.test, pred_d_100$y.nn.5.s, "5s")
+```
+
